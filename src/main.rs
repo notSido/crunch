@@ -4,6 +4,7 @@ use flate2::Compression;
 use std::fs::File;
 use std::io::{self, Read, Write, Cursor};
 use flate2::write::GzEncoder;
+use clap::{App, Arg, SubCommand};
 
 fn create_crunch_archive(files: Vec<&str>, archive_path: &str) -> io::Result<()> {
     let mut archive_file = File::create(archive_path)?;
@@ -79,19 +80,50 @@ fn read_string<R: Read>(reader: &mut R, length: usize) -> io::Result<String> {
 }
 
 fn main() {
-   let files = vec!["testfile1.txt", "testfile2.txt"];
-   let archive_path = "testarchive.crunch";
+    let matches = App::new("Crunch")
+        .version("1.0")
+        .author("Your Name")
+        .about("Compresses and extracts files using the custom Crunch format.")
+        .subcommand(
+            SubCommand::with_name("compress")
+                .about("Compresses files into a Crunch archive.")
+                .arg(Arg::with_name("FILES")
+                     .help("Sets the input files to compress")
+                     .required(true)
+                     .multiple(true)
+                     .index(1))
+        )
+        .subcommand(
+            SubCommand::with_name("extract")
+                .about("Extracts files from a Crunch archive.")
+                .arg(Arg::with_name("ARCHIVE")
+                     .help("Sets the Crunch archive file to extract")
+                     .required(true)
+                     .index(1))
+                .arg(Arg::with_name("OUTPUT_DIR")
+                     .help("Sets the output directory to extract files to")
+                     .required(false)
+                     .index(2))
+        )
+        .get_matches();
 
-   match create_crunch_archive(files, archive_path) {
-    Ok(()) => println!("Successfully created Archive! :3"),
-    Err(e) => println!("Operation failed :( {}", e)
-   }
-
-   let archive_path = "testarchive.crunch";
-   let output_dir = "extracted_files";
-
-   match extract_crunch_archive(archive_path, output_dir) {
-    Ok(()) => println!("Successfully extracted Archive!"),
-    Err(e) => println!("Extraction failed: {}", e),
-   }
+    match matches.subcommand() {
+        Some(("compress", compress_matches)) => {
+            let files: Vec<_> = compress_matches.values_of("FILES").unwrap().collect();
+            let archive_path = "my_archive.crunch";
+            match create_crunch_archive(files, archive_path) {
+                Ok(()) => println!("Successfully created crunch archive."),
+                Err(e) => eprintln!("Error creating archive: {}", e),
+            }
+        },
+        Some(("extract", extract_matches)) => {
+            let archive_path = extract_matches.value_of("ARCHIVE").unwrap();
+            let output_dir = extract_matches.value_of("OUTPUT_DIR").unwrap();
+            match extract_crunch_archive(archive_path, output_dir) {
+                Ok(()) => println!("Successfully extracted crunch archive."),
+                Err(e) => eprintln!("Error extracting archive: {}", e),
+            }
+        },
+        _ => unreachable!(),
+    }
 }
