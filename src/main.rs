@@ -1,34 +1,9 @@
-use flate2::write::DeflateEncoder;
-use flate2::read::DeflateDecoder;
+use flate2::read::GzDecoder;
+use std::path::Path;
 use flate2::Compression;
 use std::fs::File;
-use std::io::{self, Read, Write, Seek, Cursor};
+use std::io::{self, Read, Write, Cursor};
 use flate2::write::GzEncoder;
-
-fn compress_file(input_path: &str, output_path: &str) -> io::Result<()> {
-    let mut input_file = File::open(input_path)?;
-    let output_file = File::create(output_path)?;
-    let mut encoder = DeflateEncoder::new(output_file, Compression::default());
-
-    let mut buffer = Vec::new();
-    input_file.read_to_end(&mut buffer)?;
-    encoder.write_all(&buffer)?;
-    encoder.finish()?;
-
-    Ok(())
-}
-
-fn decompress_file(input_path: &str, output_path: &str) -> io::Result<()> {
-    let input_file = File::open(input_path)?;
-    let mut decoder = DeflateDecoder::new(input_file);
-    let mut output_file = File::create(output_path)?;
-
-    let mut buffer = Vec::new();
-    decoder.read_to_end(&mut buffer)?;
-    output_file.write_all(&buffer)?;
-
-    Ok(())
-}
 
 fn create_crunch_archive(files: Vec<&str>, archive_path: &str) -> io::Result<()> {
     let mut archive_file = File::create(archive_path)?;
@@ -59,26 +34,64 @@ fn create_crunch_archive(files: Vec<&str>, archive_path: &str) -> io::Result<()>
         // Write compressed file data
         archive_file.write_all(&compressed_contents)?;
     }
+    
+    Ok(())
+}
+
+fn extract_crunch_archive(archive_path: &str, output_dir: &str) -> io::Result<()> {
+    let mut archive_file = File::open(archive_path)?;
+    let output_dir_path = Path::new(output_dir);
+
+    while let Ok(file_name_length) = read_u32(&mut archive_file) {
+        let file_name = read_string(&mut archive_file, file_name_length as usize)?;
+        let file_size = read_u64(&mut archive_file)?;
+
+        let mut compressed_data = vec![0u8; file_size as usize];
+        archive_file.read_exact(&mut compressed_data)?;
+
+        let mut decoder = GzDecoder::new(Cursor::new(compressed_data));
+        let mut decompressed_data = Vec::new();
+        decoder.read_to_end(&mut decompressed_data)?;
+
+        let mut output_file = File::create(output_dir_path.join(file_name))?;
+        output_file.write_all(&decompressed_data)?;
+    }
 
     Ok(())
 }
 
+fn read_u32<R: Read>(reader: &mut R) -> io::Result<u32> {
+    let mut buffer = [0u8; 4];
+    reader.read_exact(&mut buffer)?;
+    Ok(u32::from_le_bytes(buffer))
+}
+
+fn read_u64<R: Read>(reader: &mut R) -> io::Result<u64> {
+    let mut buffer = [0u8; 8];
+    reader.read_exact(&mut buffer)?;
+    Ok(u64::from_le_bytes(buffer))
+}
+
+fn read_string<R: Read>(reader: &mut R, length: usize) -> io::Result<String> {
+    let mut buffer = vec![0; length];
+    reader.read_exact(&mut buffer)?;
+    Ok(String::from_utf8_lossy(&buffer).to_string())
+}
+
 fn main() {
-//    Decompress file
-    let input_path = "testfile.png.crunch";
-    let output_path = "testfile2.png";
+   let files = vec!["testfile1.txt", "testfile2.txt"];
+   let archive_path = "testarchive.crunch";
 
-    match decompress_file(input_path, output_path) {
-        Ok(_) => println!("File decompressed successfully!"),
-        Err(e) => println!("Error: {}", e),
-    }
+   match create_crunch_archive(files, archive_path) {
+    Ok(()) => println!("Successfully created Archive! :3"),
+    Err(e) => println!("Operation failed :( {}", e)
+   }
 
-//    Compress file
-//    let input_path = "testfile.png";
-//    let output_path = "testfile.png.crunch";
-//
-//    match compress_file(input_path, output_path) {
-//        Ok(_) => println!("File compressed successfully!"),
-//        Err(e) => println!("Error: {}", e),
-//    }
+   let archive_path = "testarchive.crunch";
+   let output_dir = "extracted_files";
+
+   match extract_crunch_archive(archive_path, output_dir) {
+    Ok(()) => println!("Successfully extracted Archive!"),
+    Err(e) => println!("Extraction failed: {}", e),
+   }
 }
