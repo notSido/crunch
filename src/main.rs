@@ -118,7 +118,7 @@ fn main() {
         },
         Some(("extract", extract_matches)) => {
             let archive_path = extract_matches.value_of("ARCHIVE").unwrap();
-            let output_dir = extract_matches.value_of("OUTPUT_DIR").unwrap();
+            let output_dir = extract_matches.value_of("OUTPUT_DIR").unwrap_or(".");
             match extract_crunch_archive(archive_path, output_dir) {
                 Ok(()) => println!("Successfully extracted crunch archive."),
                 Err(e) => eprintln!("Error extracting archive: {}", e),
