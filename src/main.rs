@@ -82,7 +82,7 @@ fn read_string<R: Read>(reader: &mut R, length: usize) -> io::Result<String> {
 fn main() {
     let matches = App::new("Crunch")
         .version("1.0")
-        .author("Your Name")
+        .author("Mikhail Sidorenko")
         .about("Compresses and extracts files using the custom Crunch format.")
         .subcommand(
             SubCommand::with_name("compress")
@@ -92,6 +92,10 @@ fn main() {
                      .required(true)
                      .multiple(true)
                      .index(1))
+                .arg(Arg::with_name("ARCHIVE_NAME")
+                    .help("Sets the name of the Crunch archive to create")
+                    .required(true)
+                    .index(2))
         )
         .subcommand(
             SubCommand::with_name("extract")
@@ -110,7 +114,7 @@ fn main() {
     match matches.subcommand() {
         Some(("compress", compress_matches)) => {
             let files: Vec<_> = compress_matches.values_of("FILES").unwrap().collect();
-            let archive_path = "my_archive.crunch";
+            let archive_path = compress_matches.value_of("ARCHIVE_NAME").unwrap_or("my_archive.crunch");
             match create_crunch_archive(files, archive_path) {
                 Ok(()) => println!("Successfully created crunch archive."),
                 Err(e) => eprintln!("Error creating archive: {}", e),
