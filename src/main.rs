@@ -1,10 +1,8 @@
-use flate2::read::GzDecoder;
 use std::path::Path;
-use flate2::Compression;
 use std::fs::File;
 use std::io::{self, Read, Write, Cursor};
-use flate2::write::GzEncoder;
 use clap::{App, Arg, SubCommand};
+use zstd::stream::read::Decoder;
 
 fn create_crunch_archive(files: Vec<&str>, archive_path: &str) -> io::Result<()> {
     let mut archive_file = File::create(archive_path)?;
@@ -14,28 +12,20 @@ fn create_crunch_archive(files: Vec<&str>, archive_path: &str) -> io::Result<()>
         let mut contents = Vec::new();
         file.read_to_end(&mut contents)?;
 
-        // Compress file data
-        let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
-        encoder.write_all(&contents)?;
-        let compressed_contents = encoder.finish()?;
+        // Compress file data using Zstandard
+        let compressed_contents = zstd::stream::encode_all(Cursor::new(&contents), 11)?; // Level 0 for default compression
 
         // Write file header
-        // File name length (4 bytes)
         let file_name = file_path.split('/').last().unwrap_or_default();
         let file_name_length = file_name.len() as u32;
         archive_file.write_all(&file_name_length.to_le_bytes())?;
-
-        // File name (variable length)
         archive_file.write_all(file_name.as_bytes())?;
 
-        // File size (8 bytes)
         let file_size = compressed_contents.len() as u64;
         archive_file.write_all(&file_size.to_le_bytes())?;
-
-        // Write compressed file data
         archive_file.write_all(&compressed_contents)?;
     }
-    
+
     Ok(())
 }
 
@@ -50,7 +40,8 @@ fn extract_crunch_archive(archive_path: &str, output_dir: &str) -> io::Result<()
         let mut compressed_data = vec![0u8; file_size as usize];
         archive_file.read_exact(&mut compressed_data)?;
 
-        let mut decoder = GzDecoder::new(Cursor::new(compressed_data));
+        // Decompress data using Zstandard
+        let mut decoder = Decoder::new(Cursor::new(compressed_data))?;
         let mut decompressed_data = Vec::new();
         decoder.read_to_end(&mut decompressed_data)?;
 
@@ -81,7 +72,7 @@ fn read_string<R: Read>(reader: &mut R, length: usize) -> io::Result<String> {
 
 fn main() {
     let matches = App::new("Crunch")
-        .version("1.0")
+        .version("1.2")
         .author("Mikhail Sidorenko")
         .about("Compresses and extracts files using the custom Crunch format.")
         .subcommand(
