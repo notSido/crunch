@@ -7,7 +7,7 @@ you interface with the program via cli, and it can be called using crunch
 
 **start:** crunch
 
-* **compress** *file 1 file2* *desired_archive_name*.crunch *(optional)*
+* **compress** *file1 file2* *desired_archive_name*.crunch *(optional)*
 * **extract** *archive name* *folder to extract files to (optional)*
 
 ### usage examples
