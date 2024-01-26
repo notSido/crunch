@@ -10,10 +10,10 @@ you interface with the program via cli, and it can be called using crunch
 * **compress** *file1 file2* *desired_archive_name*.crunch *(optional)*
 * **extract** *archive name* *folder to extract files to (optional)*
 
-### usage examples
+## usage examples
 
-#### Compress files into an archive
+### Compress files into an archive
 **crunch compress testfile1.txt testfile2.txt veryclevername.crunch**
 
-#### Extract files from archive
+### Extract files from archive
 **crunch extract veryclevername.crunch targetfolder/ (optional)** 
