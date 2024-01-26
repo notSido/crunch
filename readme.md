@@ -1,7 +1,7 @@
 # crunch
 crunch is an archive tool built on rust. meant to package lots of single files into one comfy package
 
-you interface with the program via cli, and it can be called using crunch
+you interface with the program via cli, and it can be called using the **crunch** command
 
 ## Commands
 
