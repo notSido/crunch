@@ -7,13 +7,13 @@ you interface with the program via cli, and it can be called using crunch
 
 **start:** crunch
 
-* **compress** *file1 file2* *desired_archive_name*.crunch *(optional)*
-* **extract** *archive name* *folder to extract files to (optional)*
+* **compress** *(file1) (file2)* *(desired_archive_name*.crunch *<- optional)*
+* **extract** *(archive name)* *(folder to extract files to <- optional)*
 
 ## usage examples
 
 ### Compress files into an archive
-**crunch compress testfile1.txt testfile2.txt veryclevername.crunch**
+**crunch compress testfile1.txt testfile2.txt veryclevername.crunch <- (optional)**
 
 ### Extract files from archive
-**crunch extract veryclevername.crunch targetfolder/ (optional)** 
+**crunch extract veryclevername.crunch targetfolder/ <- (optional)** 
